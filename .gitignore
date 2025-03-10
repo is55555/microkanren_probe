@@ -1,0 +1,10 @@
+# Chicken Scheme object files
+*.so
+*.o
+*.a
+*.heap
+#Other temporaries
+*~
+.#*
+
+
