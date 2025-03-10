@@ -1,14 +1,16 @@
 (load "microkanren.scm")
 (load "aux-well-formed.scm")
+(load "debug.scm")
 
 ;; Test helper: Compare actual result with expected and print pass/fail
 (define (test name expr expected)
   (let ((result expr))
-    (display "Running test: ") (display name) (newline)
-    (display "Result: ") (display result) (newline)
+    (begin (display "Running test: ") (display name) (newline)
+    (display "Result: ") (display result) (newline))
     (if (equal? result expected)
         (begin (write (list "PASS" name)) (newline))
         (begin (write (list "FAIL" name "Expected:" expected "Got:" result)) (newline)))))
+
 
 ;; Valid cases
 (test "Empty substitution is well-formed"
@@ -65,13 +67,13 @@
   #f)
 
 ;; Check lite-well-formed? behavior
-;(test "lite-well-formed? ignores circular references"
-;  (lite-well-formed? '(((var . x) . (var . y)) ((var . y) . (var . x))))
-;  #t)
 (test "lite-well-formed? ignores circular references"
-  (debug-well-formed? '(((var . x) . (var . y))  ;; x → y
-                         ((var . y) . (var . z))  ;; y → z
-                         ((var . z) . (var . x))))  ;; z → x (cycle)
-  #t)  ;; Expected to pass because it *ignores* circular refs
+  (lite-well-formed? '(((var . x) . (var . y)) ((var . y) . (var . x))))
+  #t)
+;(test "lite-well-formed? ignores circular references"
+;  (debug-well-formed? '(((var . x) . (var . y))  ;; x → y
+;                         ((var . y) . (var . z))  ;; y → z
+;                         ((var . z) . (var . x))))  ;; z → x (cycle)
+;  #t)  ;; Expected to pass because it *ignores* circular refs
 
 (display "All well-formed substitution tests complete.") (newline)

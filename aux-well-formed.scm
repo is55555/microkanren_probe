@@ -31,7 +31,7 @@
 
 ;; Predicate: Ensure no variable is bound to itself
 (define (no-self-reference? s)
-  (every? (lambda (entry) (not (eq? (car entry) (cdr entry)))) s))
+  (every? (lambda (entry) (not (equal? (car entry) (cdr entry)))) s))
 
 ;; Helper: Walk through the substitution to resolve a variable
 (define (walk v s seen)
@@ -42,11 +42,11 @@
             (walk (cdr a) s (cons v seen))  ;; Keep following bindings
             v))))
 
-;; Predicate: Ensure no circular references exist
+;; Predicate: Ensure no circular references exist ;; If walk returns the same var, it's cyclic
 (define (no-circular-references? s)
   (every? (lambda (entry)
-            (not (eq? (walk (car entry) s '()) (car entry))))  ;; If walk returns the same var, it's cyclic
-          s))
+            (not (equal? (walk (car entry) s '()) (car entry)))) s))
+
 
 ;; Predicate: Ensure substitution only contains proper pairs
 (define (proper-pair-structure? s)
@@ -60,8 +60,9 @@
                 (every? var? v)))))  ;; Every element must be a variable
 
 (define (valid-rhs? v)
-  (display "Debug: Checking RHS value: ") (display v) (newline)
+  (debug (begin (display "Debug: Checking RHS value: ") (display v) (newline)))
   (cond
+    ((null? v) #f)  ;; ❌ Explicitly reject empty lists
     ((not (pair? v)) #t) ;; ✅ Atomic values (42, "x") are valid
     ((var? v) #t)  ;; ✅ A logic variable is valid
     ((list? v)  ;; ✅ Ensure `v` is a list before using `every?`
@@ -70,6 +71,7 @@
                    (and (pair? x) (valid-rhs? x))))  ;; ✅ Ensure we only recurse on pairs
              v))
     (else #f))) ;; ❌ If none of the above are true, it's invalid
+
 
 
 ;; Predicate: Perform **all** well-formedness checks
