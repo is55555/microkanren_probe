@@ -1,16 +1,13 @@
 ;; aux-well-formed.scm
 ;; Well-formedness checks for microKanren substitutions
 
-;; Define `filter` for strict R7RS compliance
-(define (filter pred lst)
-  (cond
-    ((null? lst) '())  ;; Base case: empty list remains empty
-    ((pred (car lst)) (cons (car lst) (filter pred (cdr lst))))  ;; Keep element if it matches
-    (else (filter pred (cdr lst)))))  ;; Otherwise, skip it
+(load "aux-common.scm") ;; Ensure all basic utilities and guards are loaded
 
-;; Helper: Check if all elements satisfy a predicate
-(define (every? pred lst)
-  (null? (filter (lambda (x) (not (pred x))) lst)))
+(if (not DEBUG-LOADED)
+    (begin
+      (set! DEBUG-LOADED #t)
+      (load "debug.scm")))  ;; Load debug system only once
+
 
 ;; Predicate: Ensure substitution is a list of valid pairs
 (define (valid-structure? s)

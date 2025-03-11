@@ -1,6 +1,15 @@
 (load "microkanren.scm")
 (load "aux-well-formed.scm")
-(load "debug.scm")
+
+(load "aux-common.scm") ;; Ensure all basic utilities and guards are loaded
+
+(if (not DEBUG-LOADED)
+    (begin
+      (set! DEBUG-LOADED #t)
+      (load "debug.scm")))  ;; Load debug system only once
+
+(define pass-count 0)
+(define fail-count 0)
 
 ;; Test helper: Compare actual result with expected and print pass/fail
 (define (test name expr expected)
@@ -8,8 +17,8 @@
     (begin (display "Running test: ") (display name) (newline)
     (display "Result: ") (display result) (newline))
     (if (equal? result expected)
-        (begin (write (list "PASS" name)) (newline))
-        (begin (write (list "FAIL" name "Expected:" expected "Got:" result)) (newline)))))
+        (begin (write (list "PASS" name)) (newline) (inc! pass-count))
+        (begin (write (list "FAIL" name "Expected:" expected "Got:" result)) (newline) (inc! fail-count)))))
 
 
 ;; Valid cases
@@ -77,3 +86,5 @@
 ;  #t)  ;; Expected to pass because it *ignores* circular refs
 
 (display "All well-formed substitution tests complete.") (newline)
+(display "Pass count: ") (display pass-count) (newline)
+(display "Fail count: ") (display fail-count) (newline)
