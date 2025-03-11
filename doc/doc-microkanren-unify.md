@@ -53,7 +53,7 @@ This is the final, stable, and optimized version of microKanren with **circulari
 
 ---
 
-## **📜 Core Logic Operations (`==`, `conde`, `all`)**
+## **📜 Core Logic Operations (`==`, `disj`, `conj`)**
 
 ```scheme
 (define (== u v)
@@ -61,11 +61,11 @@ This is the final, stable, and optimized version of microKanren with **circulari
     (let ((s (unify u v s)))
       (if s (list s) '()))))
 
-(define (conde . clauses)
+(define (disj . clauses)
   (lambda (s)
     (apply append (map (lambda (g) (g s)) clauses))))
 
-(define (all . goals)
+(define (conj . goals)
   (lambda (s)
     (foldl (lambda (g acc)
              (apply append (map (lambda (x) (g x)) acc)))

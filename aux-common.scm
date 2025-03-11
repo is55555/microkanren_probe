@@ -28,6 +28,20 @@
   ; alt ; (all pred lst)))
 
 
+;; Helper: `any` function (checks if at least one element satisfies `pred`)
+(define (any pred lst)
+  (cond
+    ((null? lst) #f)  ;; Base case: no match
+    ((pred (car lst)) #t)  ;; Found a match
+    (else (any pred (cdr lst)))))  ;; Recurse on rest
+
+;; Predicate-based association list lookup
+(define (assp pred alist)
+  (cond
+    ((null? alist) #f)
+    ((pred (caar alist)) (car alist))
+    (else (assp pred (cdr alist)))))
+
 (define-syntax inc!
   (syntax-rules ()
     ((inc! var) (set! var (+ var 1)))))

@@ -19,12 +19,12 @@
 
 ;; 3️⃣ Chained Unification
 (test "Unify two variables"
-      (run 1 (all (== '(var . x) 42) (== '(var . y) '(var . x))))
+      (run 1 (conj (== '(var . x) 42) (== '(var . y) '(var . x))))
       '((((var . x) . 42) ((var . y) . 42))))
 
-;; 4️⃣ Logical OR (conde)
-(test "Logical OR (conde)"
-      (run 2 (conde (== '(var . x) 1) (== '(var . x) 2)))
+;; 4️⃣ Logical OR (disj)
+(test "Logical OR (disj)"
+      (run 2 (disj (== '(var . x) 1) (== '(var . x) 2)))
       '((((var . x) . 1)) (((var . x) . 2))))
 
 ;; 5️⃣ Unification with Lists
@@ -34,7 +34,7 @@
 
 ;; 6️⃣ Nested Unification
 (test "Nested unification"
-      (run 1 (all (== '(var . x) '(1 (var . y))) (== '(var . y) 2)))
+      (run 1 (conj (== '(var . x) '(1 (var . y))) (== '(var . y) 2)))
       '((((var . x) (1 (var . y))) ((var . y) . 2))))
 
 ;; 7️⃣ Circular Unification
@@ -42,10 +42,10 @@
       (run 1 (== '(var . x) '(var . x)))
       '((((var . x) var . x))))
 
-;; 8️⃣ Complex conde + all Combination
-(test "conde and all together"
-      (run 2 (conde (all (== '(var . x) 1) (== '(var . y) 2))
-                    (all (== '(var . x) 3) (== '(var . y) 4))))
+;; 8️⃣ Complex disj + conj Combination
+(test "disj and conj together"
+      (run 2 (disj (conj (== '(var . x) 1) (== '(var . y) 2))
+                    (conj (== '(var . x) 3) (== '(var . y) 4))))
       '((((var . x) . 1) ((var . y) . 2))
         (((var . x) . 3) ((var . y) . 4))))
 

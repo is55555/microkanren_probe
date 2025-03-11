@@ -125,10 +125,10 @@ Unification attempts to make two terms equal by updating the substitution state.
 
 - Creates a goal that unifies two terms.
 
-### **conde (Logical OR)**
+### **disj (Logical OR)**
 
 ```scheme
-(define (conde . clauses)
+(define (disj . clauses)
   (lambda (s) (apply append (map (lambda (g) (g s)) clauses))))
 ```
 
@@ -139,14 +139,14 @@ Unification attempts to make two terms equal by updating the substitution state.
 #### **Example Execution:**
 
 ```scheme
-(run 2 (conde (== '(var . x) 1) (== '(var . x) 2)))
+(run 2 (disj (== '(var . x) 1) (== '(var . x) 2)))
 ;; Output: ((((var . x) . 1)) (((var . x) . 2)))
 ```
 
-### **all (Logical AND)**
+### **conj (Logical AND)**
 
 ```scheme
-(define (all . goals)
+(define (conj . goals)
   (lambda (s) (foldl (lambda (g acc) (apply append (map g acc))) (list s) goals)))
 ```
 

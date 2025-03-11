@@ -8,13 +8,6 @@
 (define (var=? u v)
   (and (var? u) (var? v) (eq? (cdr u) (cdr v))))
 
-;; Predicate-based association list lookup
-(define (assp pred alist)
-  (cond
-    ((null? alist) #f)
-    ((pred (caar alist)) (car alist))
-    (else (assp pred (cdr alist)))))
-
 ;; Walk with cycle detection
 (define (walk-internal-strict v s seen)
   (if (member v seen)
@@ -89,8 +82,8 @@
     (let ((s (unify u v s)))
       (if s (list s) '()))))
 
-;; Goal: Logical OR (conde)
-(define (conde . clauses)
+;; Goal: Logical OR (disj)
+(define (disj . clauses)
   (lambda (s)
     (apply append
            (map (lambda (g)
@@ -98,7 +91,7 @@
                 clauses))))
 
 ;; Goal: Logical AND (all)
-(define (all . goals)
+(define (conj . goals)
   (lambda (s)
     (if (null? goals)
         (list s)  ;; ✅ Handle empty goal case correctly
@@ -118,14 +111,4 @@
 ;; Take first n results
 (define (take n lst)
   (if (or (zero? n) (null? lst)) '() (cons (car lst) (take (- n 1) (cdr lst)))))
-
-
-
-;; Helper: `any` function (checks if at least one element satisfies `pred`)
-(define (any pred lst)
-  (cond
-    ((null? lst) #f)  ;; Base case: no match
-    ((pred (car lst)) #t)  ;; Found a match
-    (else (any pred (cdr lst)))))  ;; Recurse on rest
-
 
