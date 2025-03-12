@@ -1,5 +1,6 @@
 (import (srfi 69) (srfi 27))  ;; Hash table & random support
 (load "aux-common.scm")
+(load "debug.scm")
 
 ;; --- State Management ---
 (define empty-state (make-hash-table))  ;; Start with an empty hash table
@@ -25,6 +26,7 @@
   "Generate a new logic variable"
   (set! new-var-index (+ new-var-index 1))
   (cons var-tag new-var-index))
+(define (new-var-id id) (cons var-tag id)) ; for manual control
 
 
 ;; --- Substitutions ---
@@ -35,16 +37,16 @@
                (< (cdr val) (cdr var))))  ;; ...or an earlier variable
       (begin
         (hash-table-set! s var val)
-        (display "Added: ") (display var) (display " → ") (display val) (newline)
+        (debug (begin (display "Added: ") (display var) (display " → ") (display val) (newline)))
         s)  ;; Return the updated substitution
       (begin
-        (display "REJECTED: ") (display var) (display " → ") (display val) (newline)
+        (debug (begin (display "REJECTED: ") (display var) (display " → ") (display val) (newline)))
         #f)))  ;; Invalid substitution (not triangular)
 
 (define (safe-ext-s var val s)
   (if (ext-s var val s)
-      (display "Binding succeeded.\n")
-      (display "Binding failed.\n")))
+      (debug (display "Binding succeeded.\n"))
+      (debug (display "Binding failed.\n"))))
 
 ;; --- Walk Function ---
 (define (walk v s)
@@ -54,14 +56,19 @@
         (walk binding s)  ;; Recursively follow the chain
         (or binding v))))  ;; Return found value or original variable
 
-;; --- end definitions ---
+(define (substitution-hash-printout substitution)
+  (begin (display " [ \n")
+    (hash-table-for-each substitution
+    (lambda (key value)
+        (display key) (display " → ") (display value) (newline)))
+  (display "\n ] \n")))
 
-
-;; Create substitution table - same thing (?)
+;; Create substitution table 
 (define s (create-empty-state))
-;(define s (make-hash-table)) ;; Now we guarantee it's a fresh state
 (display "Initial state of s: ") (display s) (newline)
-
+;; Debug: Print the entire substitution table before running tests
+(begin  ; left begin to switch off by using debug instead
+  (substitution-hash-printout s))
 
 ;; Generate variables
 (define x (new-var))
@@ -83,21 +90,26 @@
 (safe-ext-s c b s)  
 (safe-ext-s d z s)   
 
-;; Debug: Print the entire substitution table before running tests
-(hash-table-for-each s
-  (lambda (key value)
-    (display key) (display " → ") (display value) (newline)))
+
+
+(display "extended s with a few vars: ") (display s) (newline)
+(begin  ; left begin to switch off by using debug instead
+  (substitution-hash-printout s))
 
 
 ;; Run tests
-(display-all "walk x: " (walk x s) " " x "\n" )  ;; Should return a random number
-(display "walk x: ") (display (walk x s)) (newline)  ;; Should return a random number
-(display "walk y: ") (display (walk y s)) (newline)  ;; Expected: (var . 1)
-(display "walk a: ") (display (walk a s)) (newline)  ;; Expected: (var . 4)
-(display "walk w: ") (display (walk w s)) (newline)  ;; Expected: 9999
-(display "walk z: ") (display (walk z s)) (newline)  ;; Expected: (var . 2)
-(display "walk unbound: ") (display (walk (new-var) s)) (newline)  ;; Should return (var . 999)
+(display-all "walk x: " (walk x s) " " x "\n" ) 
+(display-all "walk w: " (walk w s) " " w "\n" ) 
+(display-all "walk y: " (walk y s) " " y "\n" ) 
+(display-all "walk z: " (walk z s) " " z "\n" ) 
+(display-all "walk a: " (walk a s) " " a "\n" ) 
+(display-all "walk b: " (walk b s) " " b "\n" ) 
+(display-all "walk c: " (walk c s) " " c "\n" ) 
+(display-all "walk d: " (walk d s) " " d "\n" ) 
+(define new-variable (new-var))
+(display-all "walk unbound-var: " (walk new-variable s) " " new-variable "[new variable]\n" ) 
 
 
 (display "Final state of s: ") (display s) (newline)
-
+(begin  ; left begin to switch off by using debug instead
+  (substitution-hash-printout s))
