@@ -46,3 +46,19 @@
   (syntax-rules ()
     ((inc! var) (set! var (+ var 1)))))
 
+;(define (display-all . args)
+;  (for-each display args))
+
+
+(define (to-string obj)
+  (cond
+    ((string? obj) obj)  ;; Keep strings unchanged
+    (else 
+     (let ((port (open-output-string)))
+       (display obj port)  ;; Ensure consistent `display` behaviour
+       (get-output-string port)))))
+
+(define (display-all . args)
+  (for-each (lambda (arg) (display (to-string arg))) args))
+
+
