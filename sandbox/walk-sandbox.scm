@@ -63,6 +63,31 @@
         (display key) (display " → ") (display value) (newline)))
   (display "\n ] \n")))
 
+(define (unify u v s)
+  "Unify two terms u and v within substitution s."
+  (let* ((u (walk u s))  ;; Resolve u
+         (v (walk v s)))  ;; Resolve v
+    (cond
+      ((equal? u v) s)  ;; ✅ Already equal? No change needed
+
+      ((var? u) (ext-s u v s))  ;; ✅ u is a variable → bind it to v
+      ((var? v) (ext-s v u s))  ;; ✅ v is a variable → bind it to u
+
+      ((and (pair? u) (pair? v))  ;; ✅ Unify pair elements recursively
+       (let ((s1 (unify (car u) (car v) s)))
+         (if s1 (unify (cdr u) (cdr v) s1) #f)))  ;; If first fails, return #f
+
+      (else #f))))  ;; ❌ If they're different atomic values, fail
+
+(define (== u v)
+  "Constraint goal that unifies u and v."
+  (lambda (s)  ;; This is a goal function that takes a substitution
+    (let ((s1 (unify u v s)))  ;; Attempt unification
+      (if s1 (list s1) '()))))  ;; ✅ If success, return new state, else fail
+
+;; --- end of general definitions ---
+;; --- Run ---
+
 ;; Create substitution table 
 (define s (create-empty-state))
 (display "Initial state of s: ") (display s) (newline)
@@ -98,16 +123,16 @@
 
 
 ;; Run tests
-(display-all "walk x: " (walk x s) " " x "\n" ) 
-(display-all "walk w: " (walk w s) " " w "\n" ) 
-(display-all "walk y: " (walk y s) " " y "\n" ) 
-(display-all "walk z: " (walk z s) " " z "\n" ) 
-(display-all "walk a: " (walk a s) " " a "\n" ) 
-(display-all "walk b: " (walk b s) " " b "\n" ) 
-(display-all "walk c: " (walk c s) " " c "\n" ) 
-(display-all "walk d: " (walk d s) " " d "\n" ) 
+(display-all "walk x: " (var->string (walk x s)) " " x "\n" ) 
+(display-all "walk w: " (var->string (walk w s)) " " w "\n" ) 
+(display-all "walk y: " (var->string (walk y s)) " " y "\n" ) 
+(display-all "walk z: " (var->string (walk z s)) " " z "\n" ) 
+(display-all "walk a: " (var->string (walk a s)) " " a "\n" ) 
+(display-all "walk b: " (var->string (walk b s)) " " b "\n" ) 
+(display-all "walk c: " (var->string (walk c s)) " " c "\n" ) 
+(display-all "walk d: " (var->string (walk d s)) " " d "\n" ) 
 (define new-variable (new-var))
-(display-all "walk unbound-var: " (walk new-variable s) " " new-variable "[new variable]\n" ) 
+(display-all "walk unbound-var: " (var->string (walk new-variable s)) " " new-variable "[new variable]\n" ) 
 
 
 (display "Final state of s: ") (display s) (newline)

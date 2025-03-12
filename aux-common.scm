@@ -61,4 +61,8 @@
 (define (display-all . args)
   (for-each (lambda (arg) (display (to-string arg))) args))
 
+(define (var->string v) ; for vars encoded as pairs
+  (if (var? v)
+      (string-append "var_" (number->string (cdr v)))
+      (to-string v)))  ;; If it's a constant, print normally
 
