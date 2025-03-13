@@ -13,12 +13,22 @@
     ((pred (car lst)) (cons (car lst) (filter pred (cdr lst))))  ;; Keep element if it matches
     (else (filter pred (cdr lst)))))  ;; Otherwise, skip it
 
-#| uncomment if "when" not available in your scheme
+#| uncomment if "when" not available in your scheme (pending testing)
 (define-syntax when
     (syntax-rules ()
     ((when test body ...)
         (if test (begin body ...))))))
 |#
+
+#| uncomment if "any" is not available in your scheme (pending testing)
+(define (any pred lst)
+  "Returns #t if pred is true for any element in lst, else #f."
+  (cond
+    ((null? lst) #f)  ;; No elements left → fail
+    ((pred (car lst)) #t)  ;; First element satisfies → success
+    (else (any pred (cdr lst)))))  ;; Recur on rest
+|#
+
 
 ;(define (all pred lst)    (null? (filter (lambda (x) (not (pred x))) lst))))
 

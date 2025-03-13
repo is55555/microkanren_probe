@@ -19,6 +19,22 @@
 
 ;; --- Start of Tests ---
 
+
+;#|
+
+(define s-tri (create-empty-state))
+(define x-tri (new-var))
+(define y-tri (new-var))
+
+(run-test "Unify x → y (triangularity check)"
+  (unify x-tri y-tri s-tri)
+  s-tri)
+
+(run-test "Check substitution x → y (triangularity enforced)"
+  (walk y-tri s-tri)
+  x-tri) ;; Expected: y should resolve to x
+
+
 ;; **Basic Unification Tests**
 (define s1 (create-empty-state))
 (define x (new-var))
@@ -138,6 +154,42 @@
 (run-test "Invalid binding: v1 → v2 (violates triangularity)"
   (ext-s v1 v2 s5)
   #f)  ;; Should fail
+
+;|#
+
+;; **Deep Nested Test with Multiple Dependencies**
+(define s9 (create-empty-state))
+(define p (new-var))
+(define q (new-var))
+(define r (new-var))
+(define s (new-var))
+(define u (new-var))
+(define v (new-var))
+(define k (new-var))
+
+(run-test "Unify p → (q (r (s 5 u v) k 8 r))"
+  (unify p (list q (list r (list s 5 u v) k 8 r)) s9)
+  s9)
+
+(substitution-hash-printout s9)
+
+(run-test "Unify s → #t"
+  (unify s #t s9)
+  s9)
+
+(run-test "Unify v → #f"
+  (unify v #f s9)
+  s9)
+
+(run-test "Unify r → 'symbol"
+  (unify r 'symbol s9)
+  s9)
+
+(run-test "Walk p should resolve correctly"
+  (walk p s9)
+  `(,q (symbol (#t 5 ,u #f) ,k 8 symbol)))  ;; Expected after substitution
+
+(substitution-hash-printout s9)
 
 ;; **Final Test Summary**
 (display "\n--- Test Summary ---\n")
