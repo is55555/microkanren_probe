@@ -1,3 +1,6 @@
+; not mine
+; uses Guile stuff
+
 (use-modules (oop goops)
 	     (djf fstruct)
 	     (ice-9 vlist)
