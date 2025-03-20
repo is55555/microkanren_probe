@@ -17,7 +17,7 @@
 (define-syntax when
     (syntax-rules ()
     ((when test body ...)
-        (if test (begin body ...))))))
+        (if test (begin body ...)))))
 |#
 
 #| uncomment if "any" is not available in your scheme (pending testing)

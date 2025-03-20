@@ -6,32 +6,36 @@
 
 (define current-log-level 10)  ;; Default: DEBUG level
 
-(define (log level msg)
-(let ((level-value (cdr (assq level log-levels))))
-(when (>= level-value current-log-level)
-(display (string-append "[" (symbol->string level) "] " msg "\n")))))
+(define-syntax when
+    (syntax-rules ()
+    ((when test body ...)
+        (if test (begin body ...)))))
+
+(define (logger level msg)
+  (let ((level-value (cdr (assq level log-levels))))
+    (when (>= level-value current-log-level)
+    (display (string-append "[" (symbol->string level) "] " msg "\n")))))
 
 (define (set-log-level level)
-(let ((level-value (cdr (assq level log-levels))))
-(if level-value
-(set! current-log-level level-value)
-(display "Invalid log level!\n"))))
+  (let ((level-value (cdr (assq level log-levels))))
+    (if level-value
+    (set! current-log-level level-value)
+    (display "Invalid log level!\n"))))
 
 ;; Usage
-(log 'debug "This is a debug message.")     ;; Always prints (default level)
-(log 'info "This is an info message.")
-(log 'warning "This is a warning.")
-(log 'error "This is an error.")
-(log 'critical "This is critical.")
+(logger 'debug "This is a debug message.")     ;; Always prints (default level)
+(logger 'info "This is an info message.")
+(logger 'warning "This is a warning.")
+(logger 'error "This is an error.")
+(logger 'critical "This is critical.")
 
 (set-log-level 'warning) ;; Change log level
 
-(log 'debug "This won't print.")   ;; Below current level
-(log 'info "This won't print.")    ;; Below current level
-(log 'warning "This will print.")  ;; At current level
-(log 'error "This will print.")    ;; Above current level
-(log 'critical "This will print.") ;; Above current level
-
+(logger 'debug "This won't print.")   ;; Below current level
+(logger 'info "This won't print.")    ;; Below current level
+(logger 'warning "This will print.")  ;; At current level
+(logger 'error "This will print.")    ;; Above current level
+(logger 'critical "This will print.") ;; Above current level
 ; =====
 
 (define log-file "logfile.txt")
