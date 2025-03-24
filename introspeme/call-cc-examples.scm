@@ -321,6 +321,29 @@
 ; ()
 ; No more undos!
 ; ()
-; > 
+; >
 
+; ---
+
+(define saved-cont #f)
+
+(define (debug-dump)
+  (call-with-current-continuation
+    (lambda (k)
+      (set! saved-cont k)
+      (display "Execution state saved!\n")
+      (lambda (msg)
+        (display "Restored state with message: ")
+        (display msg)
+        (newline)))))
+
+(define restore-fn (debug-dump))  ;; Capturing the continuation
+
+(restore-fn "First restore")  ;; Output: "Restored state with message: First restore"
+(restore-fn "Second restore") ;; Output: "Restored state with message: Second restore"
+
+; output:
+; Execution state saved!
+; Restored state with message: First restore
+; Restored state with message: Second restore
 
