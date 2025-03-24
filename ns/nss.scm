@@ -1,5 +1,5 @@
 ;; nss.scm - Namespace Preprocessor for Scheme
-;; Usage: (compile-nss "input.nss" "output.scm")
+;; Usage: chezscheme --script nss.scm input.nss output.scm
 
 (define separator "__") ; default
 (define namespace-stack '())
@@ -11,26 +11,23 @@
     (else
      (error "Unknown setting"))))
 
-;; Helper: current full namespace path
 (define (current-namespace)
   (string-join (reverse namespace-stack) separator))
 
-;; Helper: mangle a symbol
 (define (mangle sym)
   (string->symbol
    (if (null? namespace-stack)
        (symbol->string sym)
        (string-append (current-namespace) separator (symbol->string sym)))))
 
-;; Process forms recursively
 (define (process-form form)
   (cond
-    ;; (ns-set 'separator "::")
+    ;; Settings
     ((and (pair? form) (eq? (car form) 'ns-set))
      (apply ns-set (cdr form))
-     '()) ; no output
+     '())
 
-    ;; (ns "name" body...)
+    ;; (ns "name" ...)
     ((and (pair? form) (eq? (car form) 'ns))
      (let ((name (cadr form))
            (body (cddr form)))
@@ -39,17 +36,16 @@
          (set! namespace-stack (cdr namespace-stack))
          (apply append expanded))))
 
-    ;; (ns-inline "name" body...)
+    ;; (ns-inline "name" ...)
     ((and (pair? form) (eq? (car form) 'ns-inline))
      (let ((name (cadr form))
            (body (cddr form)))
        (set! namespace-stack (cons name namespace-stack))
-       ;; Inline: treat definitions as if in parent
        (let ((expanded (map process-form body)))
          (set! namespace-stack (cdr namespace-stack))
          (apply append expanded))))
 
-    ;; (define (fname ...) ...)
+    ;; Function define
     ((and (pair? form)
           (eq? (car form) 'define)
           (pair? (cadr form)))
@@ -57,16 +53,15 @@
        (list `(define ,(cons (mangle fname) (cdadr form))
                 ,@(cddr form)))))
 
-    ;; Simple define: (define x val)
+    ;; Simple define
     ((and (pair? form)
           (eq? (car form) 'define)
           (symbol? (cadr form)))
      (list `(define ,(mangle (cadr form)) ,(caddr form))))
 
-    ;; fallback
+    ;; fallback (let, lambda, etc)
     (else (list form))))
 
-;; Read full input
 (define (read-all port)
   (let loop ((forms '()))
     (let ((form (read port)))
@@ -77,6 +72,10 @@
 (define (compile-nss input-filename output-filename)
   (let ((in (open-input-file input-filename))
         (out (open-output-file output-filename)))
+    ;; Write header
+    (display ";; This file was automatically generated from a `.nss` source.\n" out)
+    (display ";; Do not modify this file directly — edit the original `.nss` file instead.\n\n" out)
+
     (let ((forms (read-all in)))
       (for-each
        (lambda (form)
@@ -84,8 +83,19 @@
           (lambda (out-form)
             (write out-form out)
             (newline out)
-            (newline out)) ; spacing for readability
+            (newline out))
           (process-form form)))
        forms))
     (close-input-port in)
     (close-output-port out)))
+
+;; Command-line support
+(define (main)
+  (let ((args (command-line)))
+    (if (< (length args) 3)
+        (begin
+          (display "Usage: chezscheme --script nss.scm input.nss output.scm\n")
+          (exit 1))
+        (compile-nss (cadr args) (caddr args)))))
+
+(main)
