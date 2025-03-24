@@ -87,7 +87,7 @@
 ;; Compile .nss → .scm
 (define (compile-nss input-filename output-filename)
   (let ((in (open-input-file input-filename))
-        (out (open-output-file output-filename)))
+        (out (open-output-file output-filename 'replace)))
     ;; Add header comment
     (display ";; This file was automatically generated from a `.nss` source.\n" out)
     (display ";; Do not modify this file directly — edit the original `.nss` file instead.\n\n" out)
