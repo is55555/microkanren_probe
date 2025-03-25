@@ -34,55 +34,87 @@
           (reverse forms)
           (loop (cons form forms))))))
 
-;; Process a form recursively
+(define inline-mode? #f)
+
+(define (parent-namespace)
+    (if (> (length namespace-stack) 1)
+        (string-join (reverse (cdr namespace-stack)) separator)
+        ""))
+
+(define (alias-definition outer-sym inner-sym)
+    `(define ,outer-sym ,inner-sym))
+
 (define (process-form form)
-  (cond
-    ;; Handle (ns-set 'separator "::")
+    (cond
+    ;; ns-set handling
     ((and (pair? form) (eq? (car form) 'ns-set))
-    (let ((args (cdr form)))
+        (let ((args (cdr form)))
         (cond
             ((and (= (length args) 2)
-            (string=? (symbol->string (cadr (car args))) "separator")
-            (string? (cadr args)))
+                (pair? (car args))
+                (eq? (car (car args)) 'quote)
+                (symbol? (cadr (car args)))
+                (string=? (symbol->string (cadr (car args))) "separator")
+                (string? (cadr args)))
             (set! separator (cadr args)))
-            (else (error 'ns-set "Invalid usage of ns-set: expected (ns-set 'separator \"...\")"))))
-    '())
+            (else
+            (error 'ns-set "Invalid usage of ns-set: expected (ns-set 'separator \"...\")"))))
+        '())
 
-
-    ;; Handle (ns "name" ...)
+    ;; regular namespace
     ((and (pair? form) (eq? (car form) 'ns))
-     (let ((name (cadr form))
-           (body (cddr form)))
-       (set! namespace-stack (cons name namespace-stack))
-       (let ((expanded (map process-form body)))
-         (set! namespace-stack (cdr namespace-stack))
-         (apply append expanded))))
+        (let ((name (cadr form))
+            (body (cddr form)))
+        (set! namespace-stack (cons name namespace-stack))
+        (let ((expanded (map process-form body)))
+            (set! namespace-stack (cdr namespace-stack))
+            (apply append expanded))))
 
-    ;; Handle (ns-inline "name" ...)
+    ;; inline namespace
     ((and (pair? form) (eq? (car form) 'ns-inline))
-     (let ((name (cadr form))
-           (body (cddr form)))
-       (set! namespace-stack (cons name namespace-stack))
-       (let ((expanded (map process-form body)))
-         (set! namespace-stack (cdr namespace-stack))
-         (apply append expanded))))
+        (let ((name (cadr form))
+            (body (cddr form)))
+        (set! namespace-stack (cons name namespace-stack))
+        (let ((was-inline inline-mode?))
+            (set! inline-mode? #t)
+            (let ((expanded (map process-form body)))
+            (set! inline-mode? was-inline)
+            (set! namespace-stack (cdr namespace-stack))
+            (apply append expanded)))))
 
-    ;; Handle function definition: (define (fname args...) ...)
+    ;; define with lambda
     ((and (pair? form)
-          (eq? (car form) 'define)
-          (pair? (cadr form)))
-     (let ((fname (caadr form)))
-       (list `(define ,(cons (mangle fname) (cdadr form))
-                ,@(cddr form)))))
+            (eq? (car form) 'define)
+            (pair? (cadr form)))
+        (let* ((fname (caadr form))
+            (mangled (mangle fname))
+            (outer-ns (parent-namespace))
+            (alias-sym (if (string=? outer-ns "")
+                            #f
+                            (string->symbol (string-append outer-ns separator (symbol->string fname))))))
+        (if (and inline-mode? alias-sym)
+            (list `(define (,mangled ,@(cdadr form)) ,@(cddr form))
+                    (alias-definition alias-sym mangled))
+            (list `(define (,mangled ,@(cdadr form)) ,@(cddr form))))))
 
-    ;; Handle variable definition: (define var val)
+    ;; define simple var
     ((and (pair? form)
-          (eq? (car form) 'define)
-          (symbol? (cadr form)))
-     (list `(define ,(mangle (cadr form)) ,(caddr form))))
+            (eq? (car form) 'define)
+            (symbol? (cadr form)))
+        (let* ((sym (cadr form))
+            (mangled (mangle sym))
+            (outer-ns (parent-namespace))
+            (alias-sym (if (string=? outer-ns "")
+                            #f
+                            (string->symbol (string-append outer-ns separator (symbol->string sym))))))
+        (if (and inline-mode? alias-sym)
+            (list `(define ,mangled ,(caddr form))
+                    (alias-definition alias-sym mangled))
+            (list `(define ,mangled ,(caddr form))))))
 
-    ;; Everything else
+    ;; fallback
     (else (list form))))
+    
 
 ;; Compile .nss → .scm
 (define (compile-nss input-filename output-filename)
