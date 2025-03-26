@@ -4,10 +4,19 @@
 (load "nss-lib.scm")
 
 
-(define (read-all port)
+#;(define (read-all port)
 (let loop ((forms '()))
   (let ((form (read port)))
     (if (eof-object? form) (reverse forms) (loop (cons form forms))))))
+
+(define (read-all port)
+(let loop ((forms '()))
+  (let ((form (read port)))
+    (if (eof-object? form)
+        (reverse forms)
+        (begin
+          (display "[read-all] >>> read: ") (write form) (newline)
+          (loop (cons form forms)))))))
 
 (define (compile-nss input-filename output-filename)
 (let ((in (open-input-file input-filename))

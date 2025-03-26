@@ -30,11 +30,6 @@
     ((null? frames) (begin (write sym) (newline) sym))
     ((assoc sym (car frames)) => (lambda (pair) (write (cdr pair)) (newline) (cdr pair)))
     (else (loop (cdr frames))))))
-;   (let loop ((frames scoped-env))
-;     (cond
-;       ((null? frames) sym)
-;       ((assoc sym (car frames)) => cdr)
-;       (else (loop (cdr frames)))))
     )
 
 ;;; Utilities ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -89,21 +84,26 @@
   '())
 
 (define (handle-ns name body inline?)
-    (set! namespace-stack (cons name namespace-stack))
-    (push-scope!)
-    (let ((was-inline inline-mode?))
-    (when inline? (set! inline-mode? #t))
-    (let loop ((forms body) (results '()))
-        (if (null? forms)
-            (begin
-            (set! inline-mode? was-inline)
-            (pop-scope!)
-            (set! namespace-stack (cdr namespace-stack))
-            (reverse results))
+(set! namespace-stack (cons name namespace-stack))
+(push-scope!)
+(let ((was-inline inline-mode?))
+  (when inline? (set! inline-mode? #t))
+  (let loop ((forms body) (results '()))
+    (if (null? forms)
+        (begin
+          (set! inline-mode? was-inline)
+          (pop-scope!)
+          (set! namespace-stack (cdr namespace-stack))
+          (reverse results))
+        (let ((current (car forms)))
+          (display "[handle-ns] --> Subform: ") (write current) (newline)
+          (let ((processed (process-form current)))
             (loop (cdr forms)
-                (append (reverse (process-form (car forms))) results))))))
+                  (append (reverse processed) results))))))))
+
 
 (define (handle-define-lambda form)
+    (display ">>> entering handle-define-lambda with form: ") (write form) (newline)
     (let* ((head (cadr form))
             (fname (car head))
             (args (cdr head))
@@ -140,6 +140,7 @@
 ;;; Dispatcher ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (process-form form)
+(display "(process-form) form = ") (write form) (newline)
 (cond
   ;; (ns-set 'separator "...")
   ((and (pair? form)
@@ -157,11 +158,14 @@
    (handle-ns (cadr form) (cddr form) #t))
 
   ;; (define (fn args ...) ...)
-  ((and (pair? form)
+    ((and (pair? form)
         (eq? (car form) 'define)
         (pair? (cadr form))
+        (not (null? (cadr form)))
         (symbol? (car (cadr form))))
-   (handle-define-lambda form))
+    (handle-define-lambda form))
+
+
 
   ;; (define var val)
   ((and (pair? form)
