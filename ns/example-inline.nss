@@ -1,3 +1,5 @@
+;example-inline.nss
+
 (ns-set 'separator "__")
 
 (define outside-var 5)

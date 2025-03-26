@@ -3,11 +3,11 @@
 
 (define geometry::pi 3.14159)
 
-(define (geometry::area::circle r) (* geometry::pi r r))
+(define (geometry::area::circle r) (* pi r r))
 
 (define (geometry::area::rectangle w h) (* w h))
 
-(define (geometry::volume::sphere r) (* 4/3 geometry::pi r r r))
+(define (geometry::volume::sphere r) (* 4/3 pi r r r))
 
 (define (geometry::volume::cuboid w h d) (* w h d))
 
