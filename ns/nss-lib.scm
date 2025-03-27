@@ -8,14 +8,33 @@
 (define (alias-definition outer-sym inner-sym)
   `(define ,outer-sym ,inner-sym))
 
+;; List of forms we consider special and should preserve in head position
+(define special-forms
+'(if lambda define set! begin cond let let* quote quasiquote
+     unquote unquote-splicing ns ns-inline ns-set))
+
 (define (rewrite expr)
-  (display "(rewrite) expr = ") (write expr) (newline)
-  (cond
-    ((symbol? expr) (lookup-symbol expr))
-    ((pair? expr) (cons (rewrite (car expr)) (rewrite (cdr expr))))
-    ((vector? expr) (list->vector (map rewrite (vector->list expr))))
+    (cond
+    ((symbol? expr)
+    (lookup-symbol expr))
+
+    ((pair? expr)
+    (let ((head (car expr)))
+        (cond
+        ;; Don't rewrite structure of special forms, only their arguments
+        ((and (symbol? head)
+                (memq head special-forms))
+            (cons head (map rewrite (cdr expr))))
+
+        ;; Otherwise, rewrite entire pair recursively
+        (else (cons (rewrite head) (rewrite (cdr expr)))))))
+
+    ((vector? expr)
+    (list->vector (map rewrite (vector->list expr))))
+
     ((null? expr) expr)
     (else expr)))
+
 
 ;;; Form Handlers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
