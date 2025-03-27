@@ -1,60 +1,9 @@
 ;; nss-lib.scm - Namespace Preprocessor Lib for Scheme 
+(load "nss-env-nsstack.scm")
 
-(define separator "__")
-(define namespace-stack '())
-(define scoped-env '())
 (define inline-mode? #f)
 
-;;; Environment Management ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define (push-scope!)
-  (let ((inherited (if (null? scoped-env) '() (car scoped-env))))
-    (set! scoped-env (cons (append inherited '()) scoped-env))))
-
-(define (pop-scope!)
-  (set! scoped-env (cdr scoped-env)))
-
-(define (define-symbol! name mangled)
-(begin ; debug
-(display "(define-symbol! ") (write name) (display " → ") (write mangled) (display ")\n")
-(let ((top (car scoped-env)))
-  (set-car! scoped-env (cons (cons name mangled) top))))
-)
-
-(define (lookup-symbol sym)
-
-(begin
-(display "(lookup-symbol ") (write sym) (display ") → ")
-(let loop ((frames scoped-env))
-  (cond
-    ((null? frames) (begin (write sym) (newline) sym))
-    ((assoc sym (car frames)) => (lambda (pair) (write (cdr pair)) (newline) (cdr pair)))
-    (else (loop (cdr frames))))))
-    )
-
 ;;; Utilities ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define (string-join lst sep)
-  (if (null? lst)
-      ""
-      (let loop ((items (cdr lst)) (acc (car lst)))
-        (if (null? items)
-            acc
-            (loop (cdr items) (string-append acc sep (car items)))))))
-
-(define (current-namespace)
-  (string-join (reverse namespace-stack) separator))
-
-(define (parent-namespace)
-  (if (> (length namespace-stack) 1)
-      (string-join (reverse (cdr namespace-stack)) separator)
-      ""))
-
-(define (mangle sym)
-  (string->symbol
-   (if (null? namespace-stack)
-       (symbol->string sym)
-       (string-append (current-namespace) separator (symbol->string sym)))))
 
 (define (alias-definition outer-sym inner-sym)
   `(define ,outer-sym ,inner-sym))
@@ -93,8 +42,7 @@
         (and (symbol? name) (string=? (symbol->string name) "")))
         (error 'ns "Namespace name cannot be empty"))
 
-
-    (set! namespace-stack (cons name namespace-stack))
+    (push-namespace! name)
     (push-scope!)
     (let ((was-inline inline-mode?))
     (when inline? (set! inline-mode? #t))
@@ -103,7 +51,7 @@
             (begin
             (set! inline-mode? was-inline)
             (pop-scope!)
-            (set! namespace-stack (cdr namespace-stack))
+            (pop-namespace!)
             (reverse results))
             (let ((current (car forms)))
             (display "[handle-ns] --> Subform: ") (write current) (newline)
