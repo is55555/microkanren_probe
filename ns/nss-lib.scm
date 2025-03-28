@@ -10,32 +10,78 @@
 
 ;; List of forms we consider special and should preserve in head position
 (define special-forms
-'(if lambda define set! begin cond let let* quote quasiquote
-     unquote unquote-splicing ns ns-inline ns-set))
-
-(define (rewrite expr)
+    '(if lambda define set! begin cond let let* letrec letrec* 
+        quote quasiquote unquote unquote-splicing 
+        ns ns-inline ns-set))
+  
+    (define special-forms
+    '(quote lambda define set! begin cond and or case
+      let let* letrec letrec* do delay
+      quasiquote unquote unquote-splicing
+      ns ns-inline ns-set))
+  
+  (define (rewrite expr)
     (cond
-    ((symbol? expr)
-    (lookup-symbol expr))
+      ;; plain symbol — rewrite using current scope
+      ((symbol? expr)
+       (lookup-symbol expr))
+  
+      ;; lambda — bind args, rewrite body
+      ((and (pair? expr)
+            (eq? (car expr) 'lambda)
+            (pair? (cdr expr))
+            (pair? (cadr expr)))
+       (let ((params (cadr expr))
+             (body (cddr expr)))
+         (push-scope!)
+         (for-each (lambda (p) (define-symbol! p p)) params)
+         (let ((new-body (map rewrite body)))
+           (pop-scope!)
+           `(lambda ,params ,@new-body))))
+  
+      ;; let / let* / letrec / letrec* — bind names, rewrite values + body
+      ((and (pair? expr)
+            (memq (car expr) '(let let* letrec letrec*)))
+       (let* ((form (car expr))
+              (bindings (cadr expr))
+              (body (cddr expr)))
+         (push-scope!)
+         ;; bind all names in current scope
+         (for-each
+          (lambda (bind)
+            (when (and (pair? bind) (symbol? (car bind)))
+              (define-symbol! (car bind) (car bind))))
+          bindings)
+         ;; rewrite only binding values
+         (let ((rewritten-bindings
+                (map (lambda (bind)
+                       (if (and (pair? bind) (symbol? (car bind)) (pair? (cdr bind)))
+                           (list (car bind) (rewrite (cadr bind)))
+                           bind))
+                     bindings))
+               (rewritten-body (map rewrite body)))
+           (pop-scope!)
+           `(,form ,rewritten-bindings ,@rewritten-body))))
+  
+      ;; other known special forms — preserve head, rewrite args
+      ((and (pair? expr)
+            (symbol? (car expr))
+            (memq (car expr) special-forms))
+       (cons (car expr) (map rewrite (cdr expr))))
+  
+      ;; general application — rewrite whole list
+      ((pair? expr)
+       (cons (rewrite (car expr)) (rewrite (cdr expr))))
+  
+      ;; vectors
+      ((vector? expr)
+       (list->vector (map rewrite (vector->list expr))))
+  
+      ;; constants
+      ((null? expr) expr)
+      (else expr)))
 
-    ((pair? expr)
-    (let ((head (car expr)))
-        (cond
-        ;; Don't rewrite structure of special forms, only their arguments
-        ((and (symbol? head)
-                (memq head special-forms))
-            (cons head (map rewrite (cdr expr))))
-
-        ;; Otherwise, rewrite entire pair recursively
-        (else (cons (rewrite head) (rewrite (cdr expr)))))))
-
-    ((vector? expr)
-    (list->vector (map rewrite (vector->list expr))))
-
-    ((null? expr) expr)
-    (else expr)))
-
-
+    
 ;;; Form Handlers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (handle-ns-set form)
