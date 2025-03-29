@@ -30,9 +30,15 @@
     ((let ((x 1)) (+ x y)) . (let ((x 1)) (+ x demo__y)))
 
     ;; Nested let introduces a new binding for y
-    ((let ((x 1))
-    (let ((y x))
-        (+ x y))) . (let ((x 1)) (let ((y x)) (+ x y))))
+    (
+        (let ((x 1))
+            (let ((y x))
+                (+ x y)))
+            . 
+        (let ((x 1))
+            (let ((y x))
+                (+ x y)))
+    )
 
     ;; Free reference to f should be rewritten
     ((let ((x 2)) (f x)) . (let ((x 2)) (demo__f x)))
