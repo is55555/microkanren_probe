@@ -39,29 +39,84 @@
            (pop-scope!)
            `(lambda ,params ,@new-body))))
   
-      ;; let / let* / letrec / letrec* — bind names, rewrite values + body
-      ((and (pair? expr)
-            (memq (car expr) '(let let* letrec letrec*)))
-       (let* ((form (car expr))
-              (bindings (cadr expr))
-              (body (cddr expr)))
-         (push-scope!)
-         ;; bind all names in current scope
-         (for-each
-          (lambda (bind)
-            (when (and (pair? bind) (symbol? (car bind)))
-              (define-symbol! (car bind) (car bind))))
-          bindings)
-         ;; rewrite only binding values
-         (let ((rewritten-bindings
-                (map (lambda (bind)
-                       (if (and (pair? bind) (symbol? (car bind)) (pair? (cdr bind)))
-                           (list (car bind) (rewrite (cadr bind)))
-                           bind))
-                     bindings))
-               (rewritten-body (map rewrite body)))
+      ;; let / let* / letrec / letrec* 
+;; Rewrite binding forms: let, let*, letrec, letrec*
+((and (pair? expr) (pair? (cdr expr)))
+(let ((form (car expr)))
+  (cond
+
+    ;; ---- let ----
+    ((eq? form 'let)
+     (let ((bindings (cadr expr))
+           (body (cddr expr)))
+       (push-scope!)
+       ;; rewrite RHS values
+       (let ((rewritten-bindings
+              (map (lambda (bind)
+                     (display "[rewrite-let] binding = ") (write bind) (newline)
+                     (let ((name (car bind))
+                           (rhs  (cadr bind)))
+                       (list name (rewrite rhs))))
+                   bindings)))
+         ;; bind names (after RHS eval)
+         (for-each (lambda (bind)
+                     (define-symbol! (car bind) (car bind)))
+                   bindings)
+         (let ((rewritten-body (map rewrite body)))
            (pop-scope!)
-           `(,form ,rewritten-bindings ,@rewritten-body))))
+           `(let ,rewritten-bindings ,@rewritten-body)))))
+
+    ;; ---- let* ----
+    ((eq? form 'let*)
+     (let ((bindings (cadr expr))
+           (body (cddr expr)))
+       (push-scope!)
+       (let ((rewritten-bindings
+              (map (lambda (bind)
+                     (display "[rewrite-let*] binding = ") (write bind) (newline)
+                     (let ((name (car bind))
+                           (rhs  (cadr bind)))
+                       (let ((rval (rewrite rhs)))
+                         (define-symbol! name name)
+                         (list name rval))))
+                   bindings)))
+         (let ((rewritten-body (map rewrite body)))
+           (pop-scope!)
+           `(let* ,rewritten-bindings ,@rewritten-body)))))
+
+    ;; ---- letrec / letrec* ----
+    ((or (eq? form 'letrec) (eq? form 'letrec*))
+     (let ((bindings (cadr expr))
+           (body (cddr expr)))
+       (push-scope!)
+       ;; bind names first
+       (for-each (lambda (bind)
+                   (define-symbol! (car bind) (car bind)))
+                 bindings)
+       ;; rewrite RHS after all names are in scope
+       (let ((rewritten-bindings
+              (map (lambda (bind)
+                     (display "[rewrite-letrec] binding = ") (write bind) (newline)
+                     (let ((name (car bind))
+                           (rhs  (cadr bind)))
+                       (list name (rewrite rhs))))
+                   bindings))
+             (rewritten-body (map rewrite body)))
+         (pop-scope!)
+         `(,form ,rewritten-bindings ,@rewritten-body))))
+
+    ;; ---- fallback ----
+    (else
+     (let ((head form)
+           (args (cdr expr)))
+       (if (symbol? head)
+           (if (memq head special-forms)
+               (cons head (map rewrite args))
+               (cons (rewrite head) (rewrite args)))
+           (cons (rewrite head) (rewrite args))))))))
+
+          
+
   
       ;; other known special forms — preserve head, rewrite args
       ((and (pair? expr)
@@ -81,7 +136,7 @@
       ((null? expr) expr)
       (else expr)))
 
-    
+
 ;;; Form Handlers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (handle-ns-set form)
