@@ -78,3 +78,37 @@ If no match is found, returns the original symbol (assumed global).
 
 [TODO: draft a test suite for this next]
 [NEXT: symbol mangling]
+
+---
+
+### 🛠️ Internal Notes and Mechanics
+
+#### Scope Stack Discipline
+
+- The environment stack (`scoped-env`) must never be empty while processing forms.
+- Each scope frame is a flat alist, not a tree.
+- Pushed frames copy outer bindings, not reference them, to preserve shadowing and prevent mutation leaks.
+
+#### Symbol Definition Timing
+
+Symbols must be defined **before** rewriting their references in the body:
+- In `let`, `define-symbol!` happens after rewriting RHS.
+- In `let*`, it happens immediately before rewriting RHS.
+- In `letrec`, all symbols are pre-bound before rewriting.
+
+#### Debugging Support
+
+For development, `define-symbol!` and `lookup-symbol` emit logs like:
+```scheme
+(define-symbol! x → geometry__x)
+(lookup-symbol x) → geometry__x
+```
+These help visualize symbol resolution and validate proper shadowing and inheritance.
+
+#### Free Symbol Handling
+
+If a symbol is not found in any frame, `lookup-symbol` returns it unchanged. This lets free variables be mangled in `rewrite`, depending on the current namespace context.
+
+#### Invariant
+
+All rewrite-time bindings must flow through this subsystem. This ensures uniformity between variable names, function names, and potential macro identifiers (when supported later).
