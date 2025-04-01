@@ -1,63 +1,66 @@
+# 00-nss-doc-overview.md
+
 ## 📘 Documentation Structure
 
 ### 1. **System Overview**
 - What `.nss` files are
 - What the preprocessor is supposed to produce
 - Core goals: namespace scoping, symbol mangling, optional inlining
+- See: `01-nss-sys-overview.md`
 
 ---
 
 ### 2. **Component Modules**
 
 #### ✅ Environment Management
-- Stack of scopes
-- Inheritance behavior (especially for inline)
+- Stack of lexical scopes
+- Shadowing and inheritance behaviour (especially for inline)
 - `define-symbol!`, `lookup-symbol`, `push-scope!`, `pop-scope!`
+- See: `02-01-nss-environment-management.md`
 
-#### ✅ Symbol Mangling
+#### ✅ Namespace Stack and Symbol Mangling
 - How `mangle` constructs names from the namespace stack
 - What separators are valid and how they affect output
 - Aliases in inline mode
+- See: `02-02-nss-namespace-stack-and-mangling.md`
 
-#### ✅ Namespace Handling
-- Structure of `ns`, `ns-inline`
+#### ✅ Namespace Handling Forms
+- Structure of `(ns ...)`, `(ns-inline ...)`
 - Effects on `scoped-env`, `namespace-stack`, and symbol visibility
-- Expected behavior with nesting
+- Expected behaviour with nesting
+- See: `02-03-nss-namespace-handling.md`
 
-#### ✅ Rewrite System
-- What gets rewritten
+#### ✅ Rewrite Subsystem
+- What gets rewritten and how scoping is enforced
 - What **shouldn’t** (special forms, macros, etc.)
-- Limitations and design choices
+- Let-forms, shadowing, free symbols
+- See: `02-04-nss-rewrite-subsystem.md`
 
 #### ✅ Error Handling
 - Malformed `define`, `ns`, or `ns-inline`
 - Unexpected symbol use
-- How errors should be reported (e.g., form + line number)
+- How errors are reported (e.g., form content)
+- See: `02-05-nss-error-handling.md`
+
+#### ✅ CLI Entrypoint
+- File read/write flow
+- Form dispatch
+- Integration of all subsystems
+- See: `02-06-nss-cli-entrypoint.md`
 
 ---
 
-### 3. **Macro Handling**
-- When macros are expanded (if at all)
-- Why macro expansion may require interpreter or Scheme-specific support
-- How to safely preprocess without breaking macro logic
+### 3. **Testing Strategy**
+- Each component has corresponding test files in `/test`:
+  - `test/test-env-stack.scm`
+  - `test/test-rewrite.scm`
+  - `test/test-rewrite2.scm`
+  - `test/test-rewrite-extra-let-bindings.scm`
 
 ---
 
-### 4. **Testing Strategy**
-- Each component with unit tests:
-  - Env stack tests
-  - Symbol mangling cases
-  - `rewrite` behavior
-  - `ns` and `ns-inline` nesting
-- Error injection and malformed input tests
-
----
-
-### 5. **Appendix: Known-Broken Current Source**
-- Include `nss-lib.scm` and `nss-cli.scm` exactly as they are
-- Annotate crash behavior, where debugging was attempted
-- Use as reference point for incremental refactor
-
----
-
-See nss-sys-overview.md
+### 4. **Future Subsystems**
+- Macro-aware preprocessing
+- Source annotations and `.nss` to `.scm` traceability
+- Inclusion handling (`include-nss`)
+- Optional namespace introspection in runtime Scheme
