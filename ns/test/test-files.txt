@@ -1,0 +1,21 @@
+test/
+├── harness/               ; shared infrastructure
+│   └── test-harness.scm
+├── env/                  ; tests for env stack & scoping
+│   ├── test-env-stack.scm
+│   └── test-env-shadowing.scm
+├── rewrite/              ; unit rewrite tests
+│   ├── test-rewrite.scm
+│   ├── test-rewrite2.scm
+│   ├── test-rewrite-lambda.scm
+│   ├── test-rewrite-extra-let-bindings.scm
+├── util/                 ; utility function tests
+│   └── test-util.scm
+├── samples/              ; input/output examples from .nss
+│   ├── example.nss
+│   ├── example-working.out.scm
+│   ├── example-inline.nss
+│   ├── example-inline-working.out.scm
+│   ├── lambda-rewrite-tests-standalone.nss
+│   └── example-inline-log.nss
+╰── test-files.txt
