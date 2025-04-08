@@ -11,8 +11,7 @@
             (and (string? nsname) (string=? nsname ""))
             (and (symbol? nsname) (string=? (symbol->string nsname) "")))
     (error 'ns "Namespace name cannot be empty"))
-  (set! namespace-stack (cons nsname namespace-stack))
-  (push-scope!))
+  (set! namespace-stack (cons nsname namespace-stack))) ; scope to be pushed independently
 
 (define (pop-namespace!)
   (set! namespace-stack (cdr namespace-stack)))
@@ -38,12 +37,6 @@
   (let ((top (car scoped-env)))
     (set-car! scoped-env (cons (cons name mangled) top))))
 
-; (define (lookup-symbol sym)
-;   (let loop ((frames scoped-env))
-;     (cond
-;       ((null? frames) sym)
-;       ((assoc sym (car frames)) => cdr)
-;       (else (loop (cdr frames))))))
 (define (lookup-symbol sym)
   (let loop ((frames scoped-env))
     (cond
