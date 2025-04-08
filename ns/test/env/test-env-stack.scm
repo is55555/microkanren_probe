@@ -1,6 +1,6 @@
 ;; test/test-env-stack.scm --- Environment stack tests
 
-(load "test/test-harness.scm")
+(load "test/harness/test-harness.scm")
 (load "nss-env-nsstack.scm")
 
 (display "=== Environment stack tests ===\n")
