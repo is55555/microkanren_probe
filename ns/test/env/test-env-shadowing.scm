@@ -1,17 +1,21 @@
+;; test-env-shadowing.scm --- Environment shadowing test
+
+(load "test/harness/test-harness.scm")
 (load "nss-env-nsstack.scm")
 
 (display "=== environment shadowing test ===\n")
 
 (push-namespace! "demo")
+(push-scope!)
 (define-symbol! 'x 'demo__x)
 
 (push-scope!)
 (define-symbol! 'x 'x)
-(display "Lookup inside scope (should be x): ")
-(write (lookup-symbol 'x)) (newline)
+(run-test "lookup in inner scope" 'x (lookup-symbol 'x))
 (pop-scope!)
 
-(display "Lookup after scope (should be demo__x): ")
-(write (lookup-symbol 'x)) (newline)
-
+(run-test "lookup in outer scope" 'demo__x (lookup-symbol 'x))
+(pop-scope!)
 (pop-namespace!)
+
+(test-summary)
